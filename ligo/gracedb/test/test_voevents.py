@@ -5,17 +5,67 @@ import sys, os
 import json
 import voeventparse
 import StringIO
+from optparse import OptionParser
+import logging
 
-# XXX Might be better to use option parsing for these things
-# No logging unless user specifies --log-file
-TEST_SERVICE = "https://moe.phys.uwm.edu/branson/api/"
-DATAFILE = "cbc-lm.xml"
-LOGFILE = "/tmp/voevent_test.log"
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+# Options
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
 
-service = os.environ.get('TEST_SERVICE', TEST_SERVICE)
-testdatadir = os.path.join(os.path.dirname(__file__), "data")
-testdatadir = os.environ.get('TEST_DATA_DIR', testdatadir)
-datafile = os.path.join(testdatadir, DATAFILE)
+op = OptionParser()
+
+op.add_option("-s", "--service-url", dest="test_service",
+                help="Test Service URL", metavar="URL",
+                default = "https://moe.phys.uwm.edu/branson/api/")
+op.add_option("-f", "--logfile", dest="logfile",
+                help="filename for logging output", 
+                metavar="NAME", default=None)
+op.add_option("-d", "--datafile", dest="datafile",
+                help="coinc xml file for creating a test event", 
+                metavar="NAME", default="cbc-lm.xml")
+op.add_option("-i", "--testdatadir", dest="test_data_dir",
+                help="the directory containing test data", 
+                metavar="NAME", default=os.path.join(os.path.dirname(__file__), "data"))
+op.add_option("-v", "--verbose", dest="verbose",
+                help="verbose output to logging file",
+                action="store_true", default=False)
+
+opts, args = op.parse_args()
+
+if opts.verbose and not opts.logfile:
+    raise ValueError, "A logfile must be specified if verbose output is desired."
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+# Setup logging
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+
+logger = logging.getLogger(__name__)
+if opts.verbose:
+    logger.setLevel(logging.DEBUG)
+else:
+    logger.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+
+if opts.logfile:
+    fh = logging.FileHandler(opts.logfile)
+else:
+    fh = logging.FileHandler(os.devnull)
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+# Main
+#--------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+
+service = opts.test_service
+datafile = os.path.join(opts.test_data_dir, opts.datafile)
 
 # Module level global variables
 g = GraceDb(service)
@@ -28,13 +78,11 @@ retraction_voevent = None
 preliminary_voevent = None
 preliminary_voevent_text = None
 
-f = open(LOGFILE, "w")
-
 # Utility for getting out a dictionary of ivorns and citation types
 def get_citations_dict(v):
     citations_dict = {}
     for e in v.Citations.iterchildren():
-        f.write("Got tag, value: %s, %s" % (e.tag, e.text))
+        logger.debug("Got tag, value: %s, %s" % (e.tag, e.text))
         if e.tag == 'EventIVORN':
             ivorn = e.text
             citation_type = e.attrib['cite']
@@ -46,29 +94,24 @@ def setup_module():
     r = g.createEvent("Test", "gstlal", datafile, "LowMass")
     event = r.json()
     graceid = event['graceid']
-    f.write("created event %s\n" % graceid)
+    logger.info("created event %s\n" % graceid)
     # Upload fake skymap file to use later
     # XXX May want some more error handling.
     r = g.writeLog(graceid, "Fake skymap file.", filename = "fake_skymap.txt",
         filecontents = "Fake skymap.", tagname = "sky_loc")
     r = g.writeLog(graceid, "Fake skymap image file.", filename = "fake_skymap_image.txt",
         filecontents = "Fake skymap image.", tagname = "sky_loc")
-    f.write("successfully wrote log\n")
-
-def teardown_module():
-    global f
-#    pass
-    f.close()
+    logger.debug("successfully wrote log\n")
 
 def test_create_preliminary_voevent():
     global preliminary_voevent
     global preliminary_voevent_text
-    f.write("inside test prelim, graceid  = %s\n" % graceid)
+    logger.debug("inside test prelim, graceid  = %s\n" % graceid)
     try:
         r = g.createVOEvent(graceid, "Preliminary")
         rdict = r.json()
         assert_true('voevent_type' in rdict.keys())
-        f.write('got text = %s\n' % rdict['text'])
+        logger.debug('got preliminary voevent text = %s\n' % rdict['text'])
         preliminary_voevent_text = rdict['text']
         preliminary_voevent = voeventparse.load(StringIO.StringIO(rdict['text']))
     except HTTPError, e:
@@ -87,15 +130,15 @@ def test_create_update_voevent():
     r = g.createVOEvent(graceid, "Update", skymap_filename = "fake_skymap.txt",
         skymap_type = "FAKE", skymap_image_filename = "fake_skymap_image.txt")
     rdict = r.json()
-    f.write("got update text = %s\n"  % rdict['text'])
+    logger.debug("got update text = %s\n"  % rdict['text'])
     assert_true('voevent_type' in rdict.keys())
     update_voevent = voeventparse.load(StringIO.StringIO(rdict['text']))
 
 def test_ivorns_unique():
     preliminary_ivorn = preliminary_voevent.attrib['ivorn']
-    f.write("preliminary ivorn = %s\n" % preliminary_ivorn)
+    logger.info("preliminary ivorn = %s\n" % preliminary_ivorn)
     update_ivorn = update_voevent.attrib['ivorn']
-    f.write("update ivorn = %s\n" % update_ivorn)
+    logger.info("update ivorn = %s\n" % update_ivorn)
     assert_true(update_ivorn != preliminary_ivorn)
 
 def test_citation_section():
@@ -108,7 +151,7 @@ def test_create_retraction_voevent():
     r = g.createVOEvent(graceid, "Retraction")
     rdict = r.json()
     assert_true('voevent_type' in rdict.keys())
-    f.write("got retraction text = %s" % rdict['text'])
+    logger.debug("got retraction text = %s" % rdict['text'])
     retraction_voevent = voeventparse.load(StringIO.StringIO(rdict['text']))
 
 def test_retraction_citations():
