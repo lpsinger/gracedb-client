@@ -270,11 +270,14 @@ class TestGracedb(unittest.TestCase):
     def test_gittag(self):
         # try to make sure GIT_TAG is set properly.
         import errno
-        version = "1.15"
+        version = "1.16"
         try:
             # If we are in the source dir (setup.py is available)
             # make sure the version above agrees.
-            setup_file = open("setup.py", 'r')
+            if os.path.exists("setup.py"):
+                setup_file = open("setup.py", 'r')
+            else:
+                setup_file = open("../../../setup.py", 'r')
             v = ""
             for line in setup_file:
                 if line.startswith("version"):
