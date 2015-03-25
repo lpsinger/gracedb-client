@@ -1,3 +1,9 @@
+ligo-gracedb (1.17-1) unstable; urgency=low
+  * Bugfix for python version incompatibility in 1.16
+  * New methods/tests for creating and retrieving VOEvents
+  * Bugfix for gittag test
+ -- Branson Stephens <branson.stephens@ligo.org>  Wed, 25 Mar 2015 09:30:00 -0500
+
 ligo-gracedb (1.16-1) unstable; urgency=low
   * Fixes for glue 1.47 to the command line client
   * Use SSLContext and explicitly turn off client-side server verification
