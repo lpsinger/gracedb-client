@@ -16,7 +16,7 @@ setup(
   url = "http://www.lsc-group.phys.uwm.edu/daswg/gracedb.html",
   license = 'GPL',
   provides = ['ligo.gracedb'],
-  packages = [ 'ligo.gracedb', 'ligo.gracedb.test'],
+  packages = [ 'ligo', 'ligo.gracedb', 'ligo.gracedb.test'],
   package_data = { 'ligo.gracedb.test' : ['data/*', 'test.sh', 'README'] },
 
   requires = ['ligo', 'M2Crypto'],

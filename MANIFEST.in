@@ -1,4 +1,3 @@
 recursive-include debian *
 recursive-include ligo/gracedb/test *
 include ligo-gracedb.spec
-include ligo/__init__.py
