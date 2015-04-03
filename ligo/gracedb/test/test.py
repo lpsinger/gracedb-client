@@ -3,7 +3,7 @@ import unittest
 import random
 import os
 
-from ligo.gracedb.rest import GraceDb
+from ligo.gracedb.rest import GraceDb, GraceDbBasic
 
 # Test the GraceDb REST API class.
 #
@@ -316,6 +316,7 @@ if __name__ == "__main__":
     testdatadir = os.environ.get('TEST_DATA_DIR', testdatadir)
 
     gracedb = GraceDb(service)
+    #gracedb = GraceDbBasic(service)
     print "Using service", service
 
     eventFile = os.path.join(testdatadir, "cbc-lm.xml")

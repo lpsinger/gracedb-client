@@ -22,6 +22,8 @@ import urllib
 import os, sys
 import json
 from urlparse import urlparse
+from base64 import b64encode
+import netrc
 
 DEFAULT_SERVICE_URL = "https://gracedb.ligo.org/api/"
 KNOWN_TEST_HOSTS = ['moe.phys.uwm.edu', 'embb-dev.ligo.caltech.ed', 'simdb.phys.uwm.edu',]
@@ -834,6 +836,95 @@ class GraceDb(GsiRest):
 # File
 
 # Label
+
+#-----------------------------------------------------------------
+# Basic auth for the LV-EM users
+
+class GraceDbBasic(GraceDb):
+    """Example GraceDb REST client with basic auth
+    
+    The GraceDB service URL may be passed to the constructor
+    if an alternate GraceDb instance is desired:
+
+        >>> g = GraceDb("https://alternate.gracedb.edu/api/")
+        >>> r = g.ping()
+
+    The proxy_host and proxy_port may also be passed in if accessing
+    GraceDB behind a proxy. For other kwargs accepted by the constructor,
+    consult the source code.
+    """
+    def __init__(self, service_url=DEFAULT_SERVICE_URL,
+            proxy_host=None, proxy_port=3128, username=None, password=None, 
+            *args, **kwargs):
+
+        o = urlparse(service_url)
+        port = o.port
+        host = o.hostname
+        port = port or 443
+
+        if not username or not password:
+            try:
+                username, account, password = netrc.netrc().authenticators(host)
+            except:
+                pass 
+
+        if not username or not password:
+            msg = "Could not find user credentials. " 
+            msg +="Please use a .netrc file or provide username and password." 
+            raise ValueError(msg)
+
+        # Construct authorization header
+        userAndPass = b64encode(b"%s:%s" % (username, password)).decode("ascii")
+        self.authn_header = { 'Authorization' : 'Basic %s' %  userAndPass }
+
+        # Versions of Python earlier than 2.7.9 don't use SSL Context
+        # objects for this purpose, and do not do any server cert verification.
+        ssl_context = None
+        if sys.hexversion >= 0x20709f0:
+            # Use the new method with SSL Context
+            # Prepare SSL context
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+            # Generally speaking, test boxes use cheap/free certs from the LIGO CA.
+            # These cannot be verified by the client.
+            if host in KNOWN_TEST_HOSTS:
+                ssl_context.verify_mode = ssl.CERT_NONE
+            else:
+                ssl_context.verify_mode = ssl.CERT_REQUIRED
+                ssl_context.check_hostname = True
+                # Find the various CA cert bundles stored on the system
+                ssl_context.load_default_certs()        
+
+            if proxy_host:
+                self.connector = lambda: ProxyHTTPSConnection(proxy_host, proxy_port, context=ssl_context)
+            else:
+                self.connector = lambda: httplib.HTTPSConnection(host, port, context=ssl_context)            
+        else:
+            # Using and older version of python. We'll pass in the cert and key files.
+            if proxy_host:
+                self.connector = lambda: ProxyHTTPSConnection(proxy_host, proxy_port)
+            else:
+                self.connector = lambda: httplib.HTTPSConnection(host, port)
+
+        self.service_url = service_url
+        self._service_info = None
+
+    def request(self, method, url, body=None, headers=None):
+        # Bug in Python (versions < 2.7.1 (?))
+        # http://bugs.python.org/issue11898
+        # if the URL is unicode and the body of a request is binary,
+        # the POST/PUT action fails because it tries to concatenate
+        # the two which fails due to encoding problems.
+        # Workaround is to cast all URLs to str.
+        # This is probably bad in general,
+        # but for our purposes, today, this will do.
+        url = url and str(url)
+        conn = self.getConnection()
+        headers = headers or {}
+        headers.update(self.authn_header)
+        conn.request(method, url, body, headers)
+        response = conn.getresponse()
+        return self.adjustResponse(response)
+
 
 #-----------------------------------------------------------------
 # HTTP upload encoding
