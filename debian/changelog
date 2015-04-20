@@ -1,3 +1,8 @@
+ligo-gracedb (1.18.dev0-1) unstable; urgency=low
+  * New features for robotic basic auth
+  * New features for EM observation records
+ -- Branson Stephens <branson.stephens@ligo.org>  Mon, 20 Apr 2015 16:30:00 -0500
+
 ligo-gracedb (1.17-1) unstable; urgency=low
   * Bugfix for python version incompatibility in 1.16
   * New methods/tests for creating and retrieving VOEvents
