@@ -652,6 +652,57 @@ class GraceDb(GsiRest):
         body.update(**kwargs)
         return self.post(uri, body=body)
 
+    def emobservations(self, graceid):
+        """Given a GraceID, get a list of EM observation entries 
+
+        Example:
+        
+            >>> g = GraceDb()       
+            >>> r = g.emobserations('T101383') 
+            >>> full_dictionary = r.json()            # Convert the response to a dictionary
+            >>> emo_list = full_dictionary['observations'] # Pull out a list of EMO dicts
+
+        """
+    
+        template = self.templates['emobservation-list-template']
+        uri = template.format(graceid=graceid)
+        return self.get(uri)
+
+    def writeEMObservation(self, graceid, group, raList, raWidthList,
+        decList, decWidthList, startTimeList, durationList):
+        """Write an EM observation entry 
+        
+        Required args: graceid, group, raList, decList, raWidthList,
+            decWidthList, startTimeList, durationList
+
+        The various lists should contain comma-separated values (or
+        a single value). Start times are in ISO 8601 UTC. Durations
+        are in seconds.
+
+        (Note that 'group' here is the name of the EM MOU group, not 
+        the LVC data analysis group responsible for the original detection.)
+        """ 
+        # validate facility, waveband, eel_status, and obs_status
+        if not group in self.em_groups:
+            raise ValueError("group must be one of %s" % self.em_groups)
+
+        # NOTE: One could do validation of the various list inputs here
+        # rather than relying on the server.
+
+        template = self.templates['emobservation-list-template']
+        uri = template.format(graceid=graceid)
+
+        body = { 
+            'group' : group, 
+            'raList' : raList,
+            'raWidthList': raWidthList,
+            'decList' : decList,
+            'decWidthList': decWidthList,
+            'startTimeList': startTimeList,
+            'durationList': durationList, 
+        }
+        return self.post(uri, body=body)
+
     def labels(self, graceid, label=""):
         """Get a list of labels for an event
 
