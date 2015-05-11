@@ -29,6 +29,21 @@ DEFAULT_SERVICE_URL = "https://gracedb.ligo.org/api/"
 KNOWN_TEST_HOSTS = ['moe.phys.uwm.edu', 'embb-dev.ligo.caltech.ed', 'simdb.phys.uwm.edu',]
 
 #-----------------------------------------------------------------
+# Utilities 
+
+# XXX It would be nice to get rid of this if we can.
+# It seems that you can pass python lists via the requests package.
+# That would make putting our lists into comma-separated strings 
+# unnecessary.
+def cleanListInput(list_arg):
+    if isinstance(list_arg, float) or isinstance(list_arg, int):
+        stringified_value = str(list_arg)
+        return stringified_value
+    if not isinstance(list_arg, basestring):
+        stringified_list = ','.join(map(str,list_arg))            
+    return stringified_list
+
+#-----------------------------------------------------------------
 # Exception(s)
 
 class HTTPError(Exception):
@@ -669,15 +684,15 @@ class GraceDb(GsiRest):
         return self.get(uri)
 
     def writeEMObservation(self, graceid, group, raList, raWidthList,
-        decList, decWidthList, startTimeList, durationList):
+        decList, decWidthList, startTimeList, durationList, comment=None):
         """Write an EM observation entry 
         
         Required args: graceid, group, raList, decList, raWidthList,
             decWidthList, startTimeList, durationList
 
-        The various lists should contain comma-separated values (or
-        a single value). Start times are in ISO 8601 UTC. Durations
-        are in seconds.
+        The various lists arguments should contain Python lists or 
+        comma-separated values (or a single value). Start times are 
+        in ISO 8601 UTC. Durations are in seconds.
 
         (Note that 'group' here is the name of the EM MOU group, not 
         the LVC data analysis group responsible for the original detection.)
@@ -688,6 +703,12 @@ class GraceDb(GsiRest):
 
         # NOTE: One could do validation of the various list inputs here
         # rather than relying on the server.
+        # These arguments can consist of a single element, a python
+        # list, or a string.  Transform the list args to csv (unless they 
+        # already are)
+        raList, raWidthList, decList, decWidthList, startTimeList, durationList = map(
+            cleanListInput, 
+            [raList, raWidthList, decList, decWidthList, startTimeList, durationList])
 
         template = self.templates['emobservation-list-template']
         uri = template.format(graceid=graceid)
@@ -700,6 +721,7 @@ class GraceDb(GsiRest):
             'decWidthList': decWidthList,
             'startTimeList': startTimeList,
             'durationList': durationList, 
+            'comment': comment,
         }
         return self.post(uri, body=body)
 

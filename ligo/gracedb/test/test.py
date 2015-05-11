@@ -2,6 +2,7 @@
 import unittest
 import random
 import os
+from datetime import datetime
 
 from ligo.gracedb.rest import GraceDb, GraceDbBasic
 
@@ -80,22 +81,31 @@ class TestGracedb(unittest.TestCase):
         self.assertTrue('numRows' in logs)
         pass
 
-    def test_create_embb_log(self):
-        """Create an EMBB log entry."""
+    def test_create_emobservation(self):
+        """Create an EM observation entry."""
         comment = "Message is {0}".format(random.random())
-        resp = gracedb.writeEel(eventId, 'Test', 'em.gamma',
-            'FO', 'TE', comment=comment, instrument='Test')
+        # Let's put in some made-up values
+        raList = [1.0,1.0,1.0]
+        raWidthList = 1.0
+        decList = [1.0,1.0,1.0]
+        decWidthList = 1.0
+        dt = datetime(1900,1,1,1,1,1)
+        startTimeList = [dt.isoformat() for i in range(3)]
+        durationList = 1.0
+        resp = gracedb.writeEMObservation(eventId, 'Test',
+            raList, raWidthList, decList, decWidthList,
+            startTimeList, durationList, comment)
         self.assertEqual(resp.status, 201)
-        new_embb_log_uri = resp.getheader('Location')
-        new_embb_log = resp.json()
-        self.assertEqual(new_embb_log_uri, new_embb_log['self'])
-        check_new_embb_log = gracedb.get(new_embb_log_uri).json()
-        self.assertEqual(check_new_embb_log['comment'], comment)
+        new_emobservation_uri = resp.getheader('Location')
+        new_emobservation = resp.json()
+        self.assertEqual(new_emobservation_uri, new_emobservation['self'])
+        check_new_emobservation = gracedb.get(new_emobservation_uri).json()
+        self.assertEqual(check_new_emobservation['comment'], comment)
 
-    def test_get_embb_log(self):
-        """Retrieve EMBB event log"""
-        eels = gracedb.eels(eventId).json()
-        self.assertTrue('numRows' in eels)
+    def test_get_emobservations(self):
+        """Retrieve EM Observation List"""
+        emos = gracedb.emobservations(eventId).json()
+        self.assertTrue('numRows' in emos)
 
     def test_upload_large_file(self):
         """Upload a large file.  Issue https://bugs.ligo.org/redmine/issues/951"""
