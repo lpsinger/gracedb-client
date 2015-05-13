@@ -1,3 +1,9 @@
+ligo-gracedb (1.18-1) unstable; urgency=low
+  * Added comment to EM Observation record
+  * Allow python lists as arguments to writeEMObservation
+  * Changed ligo to namespace package
+ -- Branson Stephens <branson.stephens@ligo.org>  Wed, 13 May 2015 14:00:00 -0500
+
 ligo-gracedb (1.18.dev0-1) unstable; urgency=low
   * New features for robotic basic auth
   * New features for EM observation records

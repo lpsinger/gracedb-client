@@ -3,7 +3,7 @@ import os
 
 from distutils.core import setup
 
-version = "1.18.dev1"
+version = "1.18"
 
 setup(
   name = "ligo-gracedb",
