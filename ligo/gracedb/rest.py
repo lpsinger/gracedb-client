@@ -36,6 +36,7 @@ KNOWN_TEST_HOSTS = ['moe.phys.uwm.edu', 'embb-dev.ligo.caltech.ed', 'simdb.phys.
 # That would make putting our lists into comma-separated strings 
 # unnecessary.
 def cleanListInput(list_arg):
+    stringified_list = list_arg
     if isinstance(list_arg, float) or isinstance(list_arg, int):
         stringified_value = str(list_arg)
         return stringified_value
