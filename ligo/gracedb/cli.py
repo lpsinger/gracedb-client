@@ -1,20 +1,20 @@
 #!/usr/bin/env python
-
-# Copyright (C) 2012  LIGO Scientific Collaboration
+# Copyright (C) Brian Moe, Branson Stephens (2015)
 #
-# This program is free software; you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by the
-# Free Software Foundation; either version 3 of the License, or (at your
-# option) any later version.
+# This file is part of gracedb
 #
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
-# Public License for more details.
+# gracedb is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# It is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with gracedb.  If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys, shutil, urllib
 import json
@@ -181,6 +181,9 @@ def main():
     analysis type(s), labels, etc.  Note that text is case insensitive
     Example: %%prog search G0100..G0200 mbta LUMIN_GO
 
+%%prog version
+    Display version information.
+
 Environment Variables:
     GRACEDB_SERVICE_URL   (can be overridden by --service-url)
     HTTP_PROXY            (can be overridden by --proxy)
@@ -273,6 +276,11 @@ Longer strings will be truncated.""" % {
 
     if len(args) < 1:
         op.error("not enough arguments")
+    elif args[0] == 'version':
+        import pkg_resources
+        version = pkg_resources.require("ligo-gracedb")[0].version
+        print "GraceDB Client v. %s" % version
+        exit(0)
     elif args[0] == 'ping':
         response = client.ping()
         output("Client groups: %s" % client.groups)
