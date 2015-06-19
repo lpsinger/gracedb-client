@@ -1,0 +1,98 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE LIGO_LW SYSTEM "http://ldas-sw.ligo.caltech.edu/doc/ligolwAPI/html/ligolw_dtd.txt">
+<LIGO_LW>
+	<Table Name="process:table">
+		<Column Type="lstring" Name="process:comment"/>
+		<Column Type="lstring" Name="process:node"/>
+		<Column Type="lstring" Name="process:domain"/>
+		<Column Type="int_4s" Name="process:unix_procid"/>
+		<Column Type="int_4s" Name="process:start_time"/>
+		<Column Type="ilwd:char" Name="process:process_id"/>
+		<Column Type="int_4s" Name="process:is_online"/>
+		<Column Type="lstring" Name="process:ifos"/>
+		<Column Type="int_4s" Name="process:jobid"/>
+		<Column Type="lstring" Name="process:username"/>
+		<Column Type="lstring" Name="process:program"/>
+		<Column Type="int_4s" Name="process:end_time"/>
+		<Column Type="lstring" Name="process:version"/>
+		<Column Type="lstring" Name="process:cvs_repository"/>
+		<Column Type="int_4s" Name="process:cvs_entry_time"/>
+		<Stream Delimiter="," Type="Local" Name="process:table">
+			,"soapbox.cgca.uwm.edu",,6486,1118462084,"process:process_id:1182",0,,0,"lluser","gstinjector",,,,,
+		</Stream>
+	</Table>
+	<Table Name="process_params:table">
+		<Column Type="ilwd:char" Name="process_params:process_id"/>
+		<Column Type="lstring" Name="process_params:program"/>
+		<Column Type="lstring" Name="process_params:type"/>
+		<Column Type="lstring" Name="process_params:value"/>
+		<Column Type="lstring" Name="process_params:param"/>
+		<Stream Delimiter="," Type="Local" Name="process_params:table">
+			"process:process_id:1182","gstinjector",,,"--verbose",
+			"process:process_id:1182","gstinjector","lstring","127.0.0.1","--server"
+		</Stream>
+	</Table>
+	<Table Name="sim_inspiral:table">
+		<Column Type="real_4" Name="sim_inspiral:theta0"/>
+		<Column Type="int_4s" Name="sim_inspiral:geocent_end_time_ns"/>
+		<Column Type="int_4s" Name="sim_inspiral:amp_order"/>
+		<Column Type="real_8" Name="sim_inspiral:end_time_gmst"/>
+		<Column Type="real_4" Name="sim_inspiral:coa_phase"/>
+		<Column Type="real_4" Name="sim_inspiral:mchirp"/>
+		<Column Type="int_4s" Name="sim_inspiral:numrel_mode_min"/>
+		<Column Type="int_4s" Name="sim_inspiral:numrel_mode_max"/>
+		<Column Type="lstring" Name="sim_inspiral:source"/>
+		<Column Type="real_4" Name="sim_inspiral:latitude"/>
+		<Column Type="lstring" Name="sim_inspiral:numrel_data"/>
+		<Column Type="int_4s" Name="sim_inspiral:geocent_end_time"/>
+		<Column Type="real_4" Name="sim_inspiral:spin2x"/>
+		<Column Type="real_4" Name="sim_inspiral:spin2y"/>
+		<Column Type="real_4" Name="sim_inspiral:spin2z"/>
+		<Column Type="ilwd:char" Name="sim_inspiral:process_id"/>
+		<Column Type="int_4s" Name="sim_inspiral:h_end_time"/>
+		<Column Type="real_4" Name="sim_inspiral:distance"/>
+		<Column Type="int_4s" Name="sim_inspiral:t_end_time"/>
+		<Column Type="lstring" Name="sim_inspiral:taper"/>
+		<Column Type="real_4" Name="sim_inspiral:longitude"/>
+		<Column Type="int_4s" Name="sim_inspiral:v_end_time_ns"/>
+		<Column Type="int_4s" Name="sim_inspiral:bandpass"/>
+		<Column Type="real_4" Name="sim_inspiral:eff_dist_l"/>
+		<Column Type="real_4" Name="sim_inspiral:eff_dist_h"/>
+		<Column Type="real_4" Name="sim_inspiral:eff_dist_g"/>
+		<Column Type="int_4s" Name="sim_inspiral:t_end_time_ns"/>
+		<Column Type="real_4" Name="sim_inspiral:spin1y"/>
+		<Column Type="real_4" Name="sim_inspiral:spin1x"/>
+		<Column Type="real_4" Name="sim_inspiral:spin1z"/>
+		<Column Type="int_4s" Name="sim_inspiral:h_end_time_ns"/>
+		<Column Type="real_4" Name="sim_inspiral:eff_dist_t"/>
+		<Column Type="int_4s" Name="sim_inspiral:l_end_time_ns"/>
+		<Column Type="real_4" Name="sim_inspiral:alpha2"/>
+		<Column Type="real_4" Name="sim_inspiral:alpha3"/>
+		<Column Type="real_4" Name="sim_inspiral:alpha1"/>
+		<Column Type="real_4" Name="sim_inspiral:alpha6"/>
+		<Column Type="real_4" Name="sim_inspiral:alpha4"/>
+		<Column Type="real_4" Name="sim_inspiral:alpha5"/>
+		<Column Type="int_4s" Name="sim_inspiral:l_end_time"/>
+		<Column Type="real_4" Name="sim_inspiral:polarization"/>
+		<Column Type="lstring" Name="sim_inspiral:waveform"/>
+		<Column Type="real_4" Name="sim_inspiral:phi0"/>
+		<Column Type="real_4" Name="sim_inspiral:inclination"/>
+		<Column Type="ilwd:char" Name="sim_inspiral:simulation_id"/>
+		<Column Type="real_4" Name="sim_inspiral:f_lower"/>
+		<Column Type="int_4s" Name="sim_inspiral:g_end_time_ns"/>
+		<Column Type="real_4" Name="sim_inspiral:eff_dist_v"/>
+		<Column Type="real_4" Name="sim_inspiral:beta"/>
+		<Column Type="int_4s" Name="sim_inspiral:g_end_time"/>
+		<Column Type="real_4" Name="sim_inspiral:alpha"/>
+		<Column Type="real_4" Name="sim_inspiral:f_final"/>
+		<Column Type="real_4" Name="sim_inspiral:mass1"/>
+		<Column Type="real_4" Name="sim_inspiral:mass2"/>
+		<Column Type="int_4s" Name="sim_inspiral:v_end_time"/>
+		<Column Type="real_4" Name="sim_inspiral:eta"/>
+		<Column Type="real_4" Name="sim_inspiral:psi0"/>
+		<Column Type="real_4" Name="sim_inspiral:psi3"/>
+		<Stream Delimiter="," Type="Local" Name="sim_inspiral:table">
+			0,105882943,-1,35568.46101114812,2.063821,1.216172,0,0,"",0.8790065,"",1118462078,0,0,0,"process:process_id:1182",1118462078,40.48566,1118462078,"TAPER_NONE",3.319481,102494240,0,58.03104,47.52833,85.77239,95987006,0,0,0,84942734,99.79561,88872025,0,0,0,0,0,0,1118462078,0.04489211,"TaylorT4threePointFivePN",0,2.612891,"sim_inspiral:simulation_id:196363",25,99578633,276.9763,0,1118462078,0,0,1.392009,1.402043,1118462078,0.2499968,0,0
+		</Stream>
+	</Table>
+</LIGO_LW>

@@ -227,6 +227,18 @@ class TestGracedb(unittest.TestCase):
         self.assertEqual(float(mbta_event['gpstime']), 1078903329.421037)
         self.assertEqual(mbta_event['far'], 4.006953918826065e-7)
 
+    def test_create_hardwareinjection(self):
+        """Create a HardwareInjection event"""
+        """sim-inj.xml"""
+        eventFile = os.path.join(testdatadir, "sim-inj.xml")
+        hardwareinjection_event = gracedb.createEvent(
+                "Test", "HardwareInjection", eventFile,
+                instrument="H1", source_channel="H1:LDAS-STRAIN",
+                destination_channel="H1:LDAS-STRAIN_CBC_INJ").json()
+        self.assertEqual(hardwareinjection_event['group'], "Test")
+        self.assertEqual(hardwareinjection_event['pipeline'], "HardwareInjection")
+        self.assertEqual(hardwareinjection_event['instruments'], "H1")
+
     def test_replace_event(self):
         graceid = eventId
 

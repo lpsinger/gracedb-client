@@ -340,7 +340,7 @@ class GraceDb(GsiRest):
                 if name == input_value][0]
 
     # Search and filecontents are optional when creating an event.
-    def createEvent(self, group, pipeline, filename, search=None, filecontents=None):
+    def createEvent(self, group, pipeline, filename, search=None, filecontents=None, **kwargs):
         """Create a new GraceDB event
 
         Required args: group, pipeline, filename
@@ -381,6 +381,11 @@ class GraceDb(GsiRest):
                  ]
         if search:
             fields.append(('search', search))
+
+        # Update fields with additional keyword arguments
+        for key, value in kwargs.iteritems():
+            fields.append((key, value))
+
         files = [('eventFile', filename, filecontents)]
         # Python httplib bug?  unicode link
         uri = str(self.links['events'])
