@@ -341,7 +341,7 @@ Longer strings will be truncated.""" % {
             op.error("not enough arguments for log")
         graceid = args[1]
         message = " ".join(args[2:])
-        response = client.writeLog(graceid, message, options.tagName, options.tagDispName)
+        response = client.writeLog(graceid, message, tagname=options.tagName, displayName=options.tagDispName)
     elif args[0] == 'tag':
         if options.tagName:
             if len(args) != 2:
