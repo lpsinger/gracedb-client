@@ -26,6 +26,7 @@ from base64 import b64encode
 import netrc
 
 DEFAULT_SERVICE_URL = "https://gracedb.ligo.org/api/"
+DEFAULT_BASIC_SERVICE_URL = "https://gracedb.ligo.org/apibasic/"
 KNOWN_TEST_HOSTS = ['moe.phys.uwm.edu', 'embb-dev.ligo.caltech.ed', 'simdb.phys.uwm.edu',]
 
 #-----------------------------------------------------------------
@@ -932,7 +933,7 @@ class GraceDbBasic(GraceDb):
     GraceDB behind a proxy. For other kwargs accepted by the constructor,
     consult the source code.
     """
-    def __init__(self, service_url=DEFAULT_SERVICE_URL,
+    def __init__(self, service_url=DEFAULT_BASIC_SERVICE_URL,
             proxy_host=None, proxy_port=3128, username=None, password=None, 
             *args, **kwargs):
 
