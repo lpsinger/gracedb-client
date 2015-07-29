@@ -20,7 +20,7 @@ import os
 
 from setuptools import setup
 
-version = "1.19.dev0"
+version = "1.19"
 
 setup(
   name = "ligo-gracedb",

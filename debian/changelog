@@ -1,3 +1,9 @@
+ligo-gracedb (1.19-1) unstable; urgency=low
+  * bug fixes (comma separated strings for EMObservations, cli createLog call) 
+  * capture of additional kwargs to facilitate HardwareInjection event upload
+  * packaging improvements (ligo as namespace package)
+ -- Branson Stephens <branson.stephens@ligo.org>  Wed, 29 Jul 2015 14:00:00 -0500
+
 ligo-gracedb (1.18-1) unstable; urgency=low
   * Added comment to EM Observation record
   * Allow python lists as arguments to writeEMObservation
