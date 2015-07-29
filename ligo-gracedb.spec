@@ -1,7 +1,7 @@
 %define name              ligo-gracedb
-%define version           1.18
-%define unmangled_version 1.18
-%define release           1
+%define version           1.19
+%define unmangled_version 1.19
+%define release           2
 
 Summary:   Gravity Wave Candidate Event Database
 Name:      %{name}
@@ -15,6 +15,7 @@ Prefix:    %{_prefix}
 BuildArch: noarch
 Vendor:    Branson Stephens <branson.stephens@ligo.org>
 Requires:  ligo-common m2crypto
+BuildRequires: python-setuptools
 Url:       http://www.lsc-group.phys.uwm.edu/daswg/gracedb.html
 
 %description
