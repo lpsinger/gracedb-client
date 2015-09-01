@@ -20,6 +20,7 @@ import unittest
 import random
 import os
 from datetime import datetime
+import time
 
 from ligo.gracedb.rest import GraceDb, GraceDbBasic
 
@@ -54,7 +55,9 @@ from ligo.gracedb.rest import GraceDb, GraceDbBasic
 #     X509_USER_KEY
 
 
-TEST_SERVICE = "https://moe.phys.uwm.edu/branson/api/"
+TEST_SERVICE = "https://gracedb-test.ligo.org/api/"
+# A sleep time in seconds used to slow down the event creation requests
+SLEEP_TIME = 1
 
 class TestGracedb(unittest.TestCase):
     """
@@ -202,6 +205,7 @@ class TestGracedb(unittest.TestCase):
     def test_create_cwb(self):
         """Create a CWB event"""
         """burst-cwb.txt"""
+        time.sleep(SLEEP_TIME)
         eventFile = os.path.join(testdatadir, "burst-cwb.txt")
         r = gracedb.createEvent("Test", "CWB", eventFile)
         self.assertEqual(r.status, 201) # CREATED
@@ -219,6 +223,7 @@ class TestGracedb(unittest.TestCase):
     def test_create_mbta(self):
         """Create an MBTA event"""
         """cbc-mbta.xml"""
+        time.sleep(SLEEP_TIME)
         eventFile = os.path.join(testdatadir, "cbc-mbta.xml")
         mbta_event = gracedb.createEvent(
                 "Test", "MBTAOnline", eventFile).json()
@@ -230,16 +235,18 @@ class TestGracedb(unittest.TestCase):
     def test_create_hardwareinjection(self):
         """Create a HardwareInjection event"""
         """sim-inj.xml"""
+        time.sleep(SLEEP_TIME)
         eventFile = os.path.join(testdatadir, "sim-inj.xml")
         hardwareinjection_event = gracedb.createEvent(
                 "Test", "HardwareInjection", eventFile,
-                instrument="H1", source_channel="H1:LDAS-STRAIN",
-                destination_channel="H1:LDAS-STRAIN_CBC_INJ").json()
+                instrument="H1", source_channel="",
+                destination_channel="").json()
         self.assertEqual(hardwareinjection_event['group'], "Test")
         self.assertEqual(hardwareinjection_event['pipeline'], "HardwareInjection")
         self.assertEqual(hardwareinjection_event['instruments'], "H1")
 
     def test_replace_event(self):
+        time.sleep(SLEEP_TIME)
         graceid = eventId
 
         old_event = gracedb.event(graceid).json()

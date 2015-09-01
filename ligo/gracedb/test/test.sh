@@ -23,7 +23,7 @@
 
 : ${GRACEDB:="gracedb"}
 : ${TEST_DATA_DIR:=$(dirname $0)/data}
-: ${GRACEDB_SERVICE_URL:="https://moe.phys.uwm.edu/branson/api/"}
+: ${GRACEDB_SERVICE_URL:="https://gracedb-test.ligo.org/api/"}
 
 export GRACEDB_SERVICE_URL
 
