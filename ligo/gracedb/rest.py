@@ -206,7 +206,15 @@ class GsiRest(object):
     def adjustResponse(self, response):
 #       XXX WRONG.
         if response.status >= 400:
-            raise HTTPError(response.status, response.reason, response.read())
+            response_content = response.read()
+            if response.getheader('x-throttle-wait-seconds', None):
+                try:
+                    rdict = json.loads(response_content)
+                    rdict['retry-after'] = response.getheader('x-throttle-wait-seconds')
+                    response_content = json.dumps(rdict)
+                except:
+                    pass  
+            raise HTTPError(response.status, response.reason, response_content)
         response.json = lambda: json.loads(response.read())
         return response
 
