@@ -29,6 +29,25 @@ DEFAULT_SERVICE_URL = "https://gracedb.ligo.org/api/"
 DEFAULT_BASIC_SERVICE_URL = "https://gracedb.ligo.org/apibasic/"
 KNOWN_TEST_HOSTS = ['moe.phys.uwm.edu', 'embb-dev.ligo.caltech.ed', 'simdb.phys.uwm.edu',]
 
+#---------------------------------------------------------------------
+# This monkey patch forces TLSv1 if the python version is 2.6.6.
+# It was introduced because clients connection from CIT *occasionally*
+# try to use SSLv3.  See:
+# http://stackoverflow.com/questions/18669457/python-httplib-ssl23-get-server-hellounknown-protocol
+#---------------------------------------------------------------------
+if sys.hexversion < 0x20709f0:
+    wrap_socket_orig = ssl.wrap_socket
+    def wrap_socket_patched(sock, keyfile=None, certfile=None,
+                            server_side=False, cert_reqs=ssl.CERT_NONE,
+                            ssl_version=ssl.PROTOCOL_TLSv1, ca_certs=None,
+                            do_handshake_on_connect=True,
+                            suppress_ragged_eofs=True):
+        return wrap_socket_orig(sock, keyfile, certfile, server_side,
+                                cert_reqs, ssl_version, ca_certs,
+                                do_handshake_on_connect,
+                                suppress_ragged_eofs)
+    ssl.wrap_socket = wrap_socket_patched
+
 #-----------------------------------------------------------------
 # Utilities 
 
