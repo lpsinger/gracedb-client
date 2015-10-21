@@ -1,6 +1,6 @@
 %define name              ligo-gracedb
-%define version           1.19
-%define unmangled_version 1.19
+%define version           1.19.1
+%define unmangled_version 1.19.1
 %define release           2
 
 Summary:   Gravity Wave Candidate Event Database

@@ -1,3 +1,10 @@
+ligo-gracedb (1.19.1-1) unstable; urgency=low
+  * Force TLSv1 for Python versions less than 2.7.9
+  * Changed adjustResponse to put retry-after in the JSON response for 429s
+  * Changed test-service to gracedb-test.ligo.org
+  * Introduced wait time to test suite
+ -- Branson Stephens <branson.stephens@ligo.org>  Wed, 21 Oct 2015 11:00:00 -0500
+
 ligo-gracedb (1.19-1) unstable; urgency=low
   * bug fixes (comma separated strings for EMObservations, cli createLog call) 
   * capture of additional kwargs to facilitate HardwareInjection event upload
