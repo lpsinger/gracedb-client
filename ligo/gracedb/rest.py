@@ -30,7 +30,7 @@ from datetime import datetime
 
 DEFAULT_SERVICE_URL = "https://gracedb.ligo.org/api/"
 DEFAULT_BASIC_SERVICE_URL = "https://gracedb.ligo.org/apibasic/"
-KNOWN_TEST_HOSTS = ['moe.phys.uwm.edu', 'embb-dev.ligo.caltech.ed', 'simdb.phys.uwm.edu',]
+KNOWN_TEST_HOSTS = ['moe.phys.uwm.edu', 'embb-dev.ligo.caltech.edu', 'simdb.phys.uwm.edu',]
 
 #---------------------------------------------------------------------
 # This monkey patch forces TLSv1 if the python version is 2.6.6.

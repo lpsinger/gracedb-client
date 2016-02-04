@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with gracedb.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import absolute_import
+
 """
 Some convenience logging classes courtesy of Leo Singer, provided as is.
 
@@ -37,13 +39,8 @@ log.addHandler(ligo.gracedb.logging.GraceDbLogHandler(gracedb, graceid))
 #
 log.warn("this is a warning")
 """
- 
-# Perform explicit absolute import of Python standard library logging module.
-# 'import logging' would not work here, because it would be interpreted as this
-# module itself.
-# module itself.g
 
-logging = __import__('logging', level=0)
+import logging
 
 class GraceDbLogStream(object):
     def __init__(self, gracedb, graceid):
