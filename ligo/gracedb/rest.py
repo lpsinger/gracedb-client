@@ -24,6 +24,9 @@ import json
 from urlparse import urlparse
 from base64 import b64encode
 import netrc
+from subprocess import Popen, PIPE
+import shlex
+from datetime import datetime
 
 DEFAULT_SERVICE_URL = "https://gracedb.ligo.org/api/"
 DEFAULT_BASIC_SERVICE_URL = "https://gracedb.ligo.org/apibasic/"
@@ -63,6 +66,52 @@ def cleanListInput(list_arg):
     if not isinstance(list_arg, basestring):
         stringified_list = ','.join(map(str,list_arg))            
     return stringified_list
+
+# The following are used to check whether a user has tried to use
+# an expired certificate.
+
+# Parse a datetime object out of the openssl output.
+# Note that this returns a naive datetime object.
+def get_dt_from_openssl_output(s):
+    dt = None
+    err = ''
+    # Openssl spits out a string like "notAfter=Feb  6 15:17:54 2016 GMT"
+    # So we first have to split off the bit after the equal sign.
+    try:
+        date_string = s.split('=')[1].strip()
+    except:
+        err = 'Openssl output not understood.'
+        return dt, err
+
+    # Next, attempt to parse the date with strptime.
+    try:
+        dt = datetime.strptime(date_string, "%b %d %H:%M:%S %Y %Z")
+    except:
+        err = 'Could not parse time string from openssl.'
+        return dt, err
+
+    return dt, err
+
+# Given a path to a cert file, check whether it is expired.
+def is_expired(cert_file):
+    cmd = 'openssl x509 -enddate -noout -in %s' % cert_file
+    p = Popen(shlex.split(cmd), stdout=PIPE, stderr=PIPE)
+    out, err = p.communicate()
+
+    expired = None
+    if p.returncode == 0:
+        dt, err = get_dt_from_openssl_output(out)
+
+        if dt:
+            # Note that our naive datetime must be compared with a UTC
+            # datetime that has been rendered naive.
+            expired = dt <= datetime.utcnow().replace(tzinfo=None)
+
+    return expired, err
+
+def output_and_die(msg):
+    sys.stderr.write(msg)
+    sys.exit(1)
 
 #-----------------------------------------------------------------
 # Exception(s)
@@ -151,6 +200,11 @@ class GsiRest(object):
             cred=None):
         if not cred:
             cred = findUserCredentials()
+        if not cred:
+            msg = "\nERROR: No certificate (or proxy) found. \n\n"
+            msg += "Please run ligo-proxy-init or grid-proxy-init (as appropriate) "
+            msg += "to generate one.\n\n"
+            output_and_die(msg)
         if isinstance(cred, (list, tuple)):
             self.cert, self.key = cred
         elif cred:
@@ -169,7 +223,13 @@ class GsiRest(object):
             # Use the new method with SSL Context
             # Prepare SSL context
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-            ssl_context.load_cert_chain(self.cert, self.key)
+            try:
+                ssl_context.load_cert_chain(self.cert, self.key)
+            except ssl.SSLError, e:
+                msg = "\nERROR: Unable to load cert/key pair. \n\n"
+                msg += "Please run ligo-proxy-init or grid-proxy-init again "
+                msg += "or make sure your robot certificate is readable.\n\n"
+                output_and_die(msg)
             # Generally speaking, test boxes use cheap/free certs from the LIGO CA.
             # These cannot be verified by the client.
             if host in KNOWN_TEST_HOSTS:
@@ -197,6 +257,49 @@ class GsiRest(object):
     def getConnection(self):
         return self.connector()
 
+    # When there is a problem with the SSL connection or cert authentication,
+    # either conn.request() or conn.getresponse() will throw an exception.
+    # The following two wrappers are intended to catch these exceptions and 
+    # return an intelligible error message to the user.
+    # A wrapper for getting the response:
+    def get_response(self, conn):
+        try:
+            return conn.getresponse()
+        except ssl.SSLError, e:
+            # Check for a valid user proxy cert.
+            expired, error = is_expired(self.cert)
+            if expired is not None:
+                if expired:
+                    msg = "\nERROR: Your certificate or proxy has expired. \n\n"
+                    msg += "Please run ligo-proxy-init or grid-proxy-init (as appropriate) "
+                    msg += "to generate a fresh one.\n\n"
+                else:
+                    msg = "\nERROR \n\n"
+                    msg += "Your certificate appears valid, but there was a problem "
+                    msg += "establishing a secure connection: \n\n"
+                    msg += "%s \n\n" % str(e)
+            else:
+                msg = "\nERROR \n\n"
+                msg += "Unable to check certificate expiry date: %s \n\n" %error
+                msg += "Problem establishing secure connection: %s \n\n" % str(e)
+            output_and_die(msg)
+        except Exception, e:
+            # Some error unrelated to the SSL connection has occurred.
+            output_and_die("ERROR: %s\n" % str(e))
+
+    # A wrapper for making the request.
+    def make_request(self, conn, *args, **kwargs):
+        try:
+            conn.request(*args, **kwargs)
+        except ssl.SSLError, e:
+            msg = "\nERROR \n\n"
+            msg += "Problem establishing secure connection: %s \n\n" % str(e)
+            output_and_die(msg)
+        except Exception, e:
+            msg = "\nERROR \n\n"
+            msg += "%s \n\n" % str(e)
+            output_and_die(msg)
+        
     def request(self, method, url, body=None, headers=None, priming_url=None):
         # Bug in Python (versions < 2.7.1 (?))
         # http://bugs.python.org/issue11898
@@ -211,15 +314,15 @@ class GsiRest(object):
 
         conn = self.getConnection()
         if priming_url:
-            conn.request("GET", priming_url, headers={'connection' : 'keep-alive'})
-            response = conn.getresponse()
+            self.make_request(conn, "GET", priming_url, headers={'connection' : 'keep-alive'})
+            response = self.get_response(conn)
             if response.status != 200:
                 response = self.adjustResponse(response)
             else:
                 # Throw away the response and make sure to read the body.
                 response = response.read()
-        conn.request(method, url, body, headers or {})
-        response = conn.getresponse()
+        self.make_request(conn, method, url, body, headers or {})
+        response = self.get_response(conn)
         return self.adjustResponse(response)
 
     def adjustResponse(self, response):
@@ -305,7 +408,19 @@ class GraceDb(GsiRest):
     @property
     def service_info(self):
         if not self._service_info:
-            self._service_info = self.request("GET", self.service_url).json()
+            r = None
+            try:
+                r = self.request("GET", self.service_url)
+                self._service_info = r.json()
+            except ValueError, e:
+                if r:
+                    msg = "\nERROR: Unexpected response to server info request: %s \n\n" % r.status
+                    if r.length:
+                        msg += "%s\n\n" % r.read()
+                else:
+                    msg = "\nERROR: Unable to get response to server info request. \n\n" 
+                sys.stderr.write(msg)
+                sys.exit(1)
         return self._service_info
 
     @property
@@ -1098,5 +1213,4 @@ def findUserCredentials(warnOnOldProxy=1):
 
     if os.path.exists(certFile) and os.path.exists(keyFile):
         return certFile, keyFile
-
 
