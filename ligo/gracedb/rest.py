@@ -1091,9 +1091,9 @@ class GraceDbBasic(GraceDb):
                 pass 
 
         if not username or not password:
-            msg = "Could not find user credentials. " 
-            msg +="Please use a .netrc file or provide username and password." 
-            raise ValueError(msg)
+            msg = "\nERROR: Could not find user credentials. \n\n"
+            msg +="Please use a .netrc file or provide username and password.\n\n" 
+            output_and_die(msg)
 
         # Construct authorization header
         userAndPass = b64encode(b"%s:%s" % (username, password)).decode("ascii")
@@ -1130,6 +1130,33 @@ class GraceDbBasic(GraceDb):
         self.service_url = service_url
         self._service_info = None
 
+    # When there is a problem with the SSL connection or authentication,
+    # either conn.request() or conn.getresponse() will throw an exception.
+    def get_response(self, conn):
+        try:
+            return conn.getresponse()
+        except ssl.SSLError, e:
+            msg = "\nERROR \n\n"
+            msg += "Problem establishing secure connection: %s \n\n" % str(e)
+            output_and_die(msg)
+        except Exception, e:
+            msg = "\nERROR \n\n"
+            msg += "%s \n\n" % str(e)
+            output_and_die(msg)
+
+    # A wrapper for making the request.
+    def make_request(self, conn, *args, **kwargs):
+        try:
+            conn.request(*args, **kwargs)
+        except ssl.SSLError, e:
+            msg = "\nERROR \n\n"
+            msg += "Problem establishing secure connection: %s \n\n" % str(e)
+            output_and_die(msg)
+        except Exception, e:
+            msg = "\nERROR \n\n"
+            msg += "%s \n\n" % str(e)
+            output_and_die(msg)
+
     def request(self, method, url, body=None, headers=None):
         # Bug in Python (versions < 2.7.1 (?))
         # http://bugs.python.org/issue11898
@@ -1143,10 +1170,20 @@ class GraceDbBasic(GraceDb):
         conn = self.getConnection()
         headers = headers or {}
         headers.update(self.authn_header)
-        conn.request(method, url, body, headers)
-        response = conn.getresponse()
+        self.make_request(conn, method, url, body, headers)
+        response = self.get_response(conn)
+        # Catch the 401 unauthorized response before sending to adjust
+        # response. Effectively, the 401 response will have special status.
+        if response.status == 401:
+            try:
+                msg = "\nERROR: %s \n\n" % json.loads(response.read())['error']
+            except:
+                msg = "\nERROR: \n\n" 
+            msg += "Please check the username/password in your .netrc file. \n"
+            msg += "Note: If your password is more than a year old, you will \n"
+            msg += "need to use the web interface to generate a new one. \n\n" 
+            output_and_die(msg)
         return self.adjustResponse(response)
-
 
 #-----------------------------------------------------------------
 # HTTP upload encoding
