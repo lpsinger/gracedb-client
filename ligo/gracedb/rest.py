@@ -109,9 +109,39 @@ def is_expired(cert_file):
 
     return expired, err
 
+# A utility for writing out an error message to the user and then stopping
+# execution. This seems to behave sensibly in both the interpreter and in
+# a script.
 def output_and_die(msg):
     sys.stderr.write(msg)
     sys.exit(1)
+
+# Given an HTTPResponse object, try to read it's content and interpret as
+# JSON--or die trying.
+def load_json_or_die(response):
+
+    # First check that the response object actually exists.
+    if not response:
+        msg = "ERROR: no response object. \n\n"
+        output_and_die(msg)
+
+    # Next, try to read the content of the response.
+    try:
+        response_content = response.read()
+    except Exception, e:
+        msg = "ERROR: problem reading response. \n\n"
+        output_and_die(msg)
+
+    # Finally, try to create a dict by decoding the response as JSON.
+    rdict = None
+    try:
+        rdict = json.loads(response_content)
+    except Exception, e:
+        msg = "ERROR: got unexpected content from the server:\n\n"
+        msg += response_content + "\n\n"
+        output_and_die(msg)
+        
+    return rdict          
 
 #-----------------------------------------------------------------
 # Exception(s)
@@ -337,7 +367,7 @@ class GsiRest(object):
                 except:
                     pass  
             raise HTTPError(response.status, response.reason, response_content)
-        response.json = lambda: json.loads(response.read())
+        response.json = lambda: load_json_or_die(response)
         return response
 
     def get(self, url, headers=None):
@@ -408,19 +438,8 @@ class GraceDb(GsiRest):
     @property
     def service_info(self):
         if not self._service_info:
-            r = None
-            try:
-                r = self.request("GET", self.service_url)
-                self._service_info = r.json()
-            except ValueError, e:
-                if r:
-                    msg = "\nERROR: Unexpected response to server info request: %s \n\n" % r.status
-                    if r.length:
-                        msg += "%s\n\n" % r.read()
-                else:
-                    msg = "\nERROR: Unable to get response to server info request. \n\n" 
-                sys.stderr.write(msg)
-                sys.exit(1)
+            r = self.request("GET", self.service_url)
+            self._service_info = r.json()
         return self._service_info
 
     @property
