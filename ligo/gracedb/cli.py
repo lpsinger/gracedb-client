@@ -18,7 +18,7 @@
 
 import os, sys, shutil, urllib
 import json
-from ligo.gracedb.rest import GraceDb
+from ligo.gracedb.rest import GraceDb, load_json_or_die
 
 
 DEFAULT_SERVICE_URL = "https://gracedb.ligo.org/gracedb/api"
@@ -112,7 +112,7 @@ class Client(GraceDb):
     # Hamstring 'adjustResponse' from the example REST client.
     # We don't want it messing with the response from the server.
     def adjustResponse(self, response):
-        response.json = lambda: json.loads(response.read())
+        response.json = lambda: load_json_or_die(response)
         return response
 
 #-----------------------------------------------------------------
