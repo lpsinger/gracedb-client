@@ -76,6 +76,50 @@ typeCodeMap = {
 }
 validTypes = typeCodeMap.keys()
 
+#-----------------------------------------------------------------
+# This is a factory for client classes. 
+# Given a base client class with the correct properties, derive 
+# one suitable for use with this command-line tool. In practice,
+# the base class here will either be the X509 auth GraceDb class
+# or the basic auth GraceDbBasic class.
+
+def derive_client(ClientBase=GraceDb):
+    class client(ClientBase):
+        def __init__(self, url=DEFAULT_SERVICE_URL, *args, **kwargs):
+            if (url[-1] != '/'):
+                url += '/'
+            self.url = url
+            super(client, self).__init__(url, *args, **kwargs)
+
+        def download(self, graceid, filename, destfile):
+            # Check that we *could* write the file before we
+            # go to the trouble of getting it.  Also, try not
+            # to open a file until we know we have data.
+            if not isinstance(destfile, file) and destfile != "-":
+                if not os.access(os.path.dirname(os.path.abspath(destfile)), os.W_OK):
+                    raise IOError("%s: Permission denied" % destfile)
+            response = self.files(graceid, filename)
+            if response.status == 200:
+                if not isinstance(destfile, file):
+                    if destfile == '-':
+                        destfile = sys.stdout
+                    else:
+                        destfile = open(destfile, "w")
+                shutil.copyfileobj(response, destfile)
+                return 0
+            else:
+                return "Error. (%d) %s" % (response.status, response.reason)
+
+        # Hamstring 'adjustResponse' from the example REST client.
+        # We don't want it messing with the response from the server.
+        def adjustResponse(self, response):
+            response.json = lambda: load_json_or_die(response)
+            return response
+    return client
+
+# Get X509 client in global scope
+# This is required for passing the unit tests.
+Client = derive_client()
 
 #-----------------------------------------------------------------
 # Main 
@@ -236,40 +280,9 @@ Longer strings will be truncated.""" % {
             service = DEFAULT_BASIC_URL
 
     # Client subclass according to preferred auth method. 
-    ClientBase = GraceDbBasic if options.use_basic_auth else GraceDb
-
-    class Client(ClientBase):
-        def __init__(self, url=DEFAULT_SERVICE_URL, *args, **kwargs):
-            if (url[-1] != '/'):
-                url += '/'
-            self.url = url
-            super(Client, self).__init__(url, *args, **kwargs)
-
-        def download(self, graceid, filename, destfile):
-            # Check that we *could* write the file before we
-            # go to the trouble of getting it.  Also, try not
-            # to open a file until we know we have data.
-            if not isinstance(destfile, file) and destfile != "-":
-                if not os.access(os.path.dirname(os.path.abspath(destfile)), os.W_OK):
-                    raise IOError("%s: Permission denied" % destfile)
-            response = self.files(graceid, filename)
-            if response.status == 200:
-                if not isinstance(destfile, file):
-                    if destfile == '-':
-                        destfile = sys.stdout
-                    else:
-                        destfile = open(destfile, "w")
-                shutil.copyfileobj(response, destfile)
-                return 0
-            else:
-                return "Error. (%d) %s" % (response.status, response.reason)
-
-        # Hamstring 'adjustResponse' from the example REST client.
-        # We don't want it messing with the response from the server.
-        def adjustResponse(self, response):
-            response.json = lambda: load_json_or_die(response)
-            return response
-
+    global Client
+    if options.use_basic_auth:
+        Client = derive_client(GraceDbBasic)
 
     if options.alert is not None:
         warning("alert option is deprecated.  Alerts are now sent by default.")
