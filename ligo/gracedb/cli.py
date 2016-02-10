@@ -18,10 +18,12 @@
 
 import os, sys, shutil, urllib
 import json
-from ligo.gracedb.rest import GraceDb, load_json_or_die
+from ligo.gracedb.rest import GraceDb, load_json_or_die, GraceDbBasic
 
 
 DEFAULT_SERVICE_URL = "https://gracedb.ligo.org/gracedb/api"
+
+DEFAULT_BASIC_URL = "https://gracedb.ligo.org/apibasic/"
 
 GIT_TAG = 'gracedb-1.19.1-1'
 
@@ -74,46 +76,6 @@ typeCodeMap = {
 }
 validTypes = typeCodeMap.keys()
 
-
-#-----------------------------------------------------------------
-# Web Service Client
-
-class Client(GraceDb):
-    def __init__(self,
-            url=DEFAULT_SERVICE_URL, 
-            proxy_host=None, proxy_port=3128,
-            credentials=None,
-            *args, **kwargs):
-        if (url[-1] != '/'):
-            url += '/'
-        self.url = url
-        super(Client, self).__init__(url, proxy_host, proxy_port, 
-                                        credentials, *args, **kwargs)
-
-    def download(self, graceid, filename, destfile):
-        # Check that we *could* write the file before we
-        # go to the trouble of getting it.  Also, try not
-        # to open a file until we know we have data.
-        if not isinstance(destfile, file) and destfile != "-":
-            if not os.access(os.path.dirname(os.path.abspath(destfile)), os.W_OK):
-                raise IOError("%s: Permission denied" % destfile)
-        response = self.files(graceid, filename)
-        if response.status == 200:
-            if not isinstance(destfile, file):
-                if destfile == '-':
-                    destfile = sys.stdout
-                else:
-                    destfile = open(destfile, "w")
-            shutil.copyfileobj(response, destfile)
-            return 0
-        else:
-            return "Error. (%d) %s" % (response.status, response.reason)
-
-    # Hamstring 'adjustResponse' from the example REST client.
-    # We don't want it messing with the response from the server.
-    def adjustResponse(self, response):
-        response.json = lambda: load_json_or_die(response)
-        return response
 
 #-----------------------------------------------------------------
 # Main 
@@ -235,6 +197,10 @@ Longer strings will be truncated.""" % {
                   help="tag display name (ignored for existing tags)",
                   default=None
                  )
+    op.add_option("-b", "--use-basic-auth", dest="use_basic_auth",
+                  help="Use basic auth with a .netrc file. Available to non-LVC members only.",
+                  action="store_true", default=False
+                 )
 
     options, args = op.parse_args()
 
@@ -256,6 +222,54 @@ Longer strings will be truncated.""" % {
     service = options.service or \
               os.environ.get('GRACEDB_SERVICE_URL', None) or \
               DEFAULT_SERVICE_URL
+
+    # If the user requested a specific service, but also wants basic auth,
+    # then the service had better be a basic auth endpoint. Otherwise die.
+    # On the other hand, if the user did not specify a service url, then we 
+    # will use the default basic URL if basic auth was requested.
+    if options.use_basic_auth:
+        if options.service or os.environ.get('GRACEDB_SERVICE_URL', None):
+            if 'basic' not in service:
+                error("To use the basic auth client, specify a basic auth service URL or use the default.")
+                exit(1)
+        else:
+            service = DEFAULT_BASIC_URL
+
+    # Client subclass according to preferred auth method. 
+    ClientBase = GraceDbBasic if options.use_basic_auth else GraceDb
+
+    class Client(ClientBase):
+        def __init__(self, url=DEFAULT_SERVICE_URL, *args, **kwargs):
+            if (url[-1] != '/'):
+                url += '/'
+            self.url = url
+            super(Client, self).__init__(url, *args, **kwargs)
+
+        def download(self, graceid, filename, destfile):
+            # Check that we *could* write the file before we
+            # go to the trouble of getting it.  Also, try not
+            # to open a file until we know we have data.
+            if not isinstance(destfile, file) and destfile != "-":
+                if not os.access(os.path.dirname(os.path.abspath(destfile)), os.W_OK):
+                    raise IOError("%s: Permission denied" % destfile)
+            response = self.files(graceid, filename)
+            if response.status == 200:
+                if not isinstance(destfile, file):
+                    if destfile == '-':
+                        destfile = sys.stdout
+                    else:
+                        destfile = open(destfile, "w")
+                shutil.copyfileobj(response, destfile)
+                return 0
+            else:
+                return "Error. (%d) %s" % (response.status, response.reason)
+
+        # Hamstring 'adjustResponse' from the example REST client.
+        # We don't want it messing with the response from the server.
+        def adjustResponse(self, response):
+            response.json = lambda: load_json_or_die(response)
+            return response
+
 
     if options.alert is not None:
         warning("alert option is deprecated.  Alerts are now sent by default.")
