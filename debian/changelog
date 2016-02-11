@@ -1,3 +1,9 @@
+ligo-gracedb (1.20-1) unstable; urgency=low
+  * Improved error handling for expired or missing credentials
+  * Improved error handling when server returns non-JSON response
+  * Added --use-basic-auth option to command-line client 
+ -- Branson Stephens <branson.stephens@ligo.org>  Thu, 11 Feb 2016 15:00:00 -0600
+
 ligo-gracedb (1.19.1-1) unstable; urgency=low
   * Force TLSv1 for Python versions less than 2.7.9
   * Changed adjustResponse to put retry-after in the JSON response for 429s

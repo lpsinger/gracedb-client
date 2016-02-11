@@ -25,7 +25,7 @@ DEFAULT_SERVICE_URL = "https://gracedb.ligo.org/gracedb/api"
 
 DEFAULT_BASIC_URL = "https://gracedb.ligo.org/apibasic/"
 
-GIT_TAG = 'gracedb-1.19.1-1'
+GIT_TAG = 'gracedb-1.20-1'
 
 DEFAULT_COLUMNS = "graceid,labels,group,pipeline,search,far,gpstime,created,dataurl"
  
