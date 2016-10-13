@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with gracedb.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 import unittest
 import random
 import os
@@ -23,6 +24,7 @@ from datetime import datetime
 import time
 
 from ligo.gracedb.rest import GraceDb, GraceDbBasic
+from six.moves import range
 
 # Test the GraceDb REST API class.
 #
@@ -330,7 +332,7 @@ class TestGracedb(unittest.TestCase):
                     v = line.split('"')[1]
                     break
             self.assertEqual(v, version)
-        except IOError, e:
+        except IOError as e:
             if e.errno != errno.ENOENT:
                 raise
 
@@ -363,7 +365,7 @@ if __name__ == "__main__":
 
     gracedb = GraceDb(service)
     #gracedb = GraceDbBasic(service)
-    print "Using service", service
+    print("Using service", service)
 
     eventFile = os.path.join(testdatadir, "cbc-lm.xml")
     createdEvent = gracedb.createEvent(

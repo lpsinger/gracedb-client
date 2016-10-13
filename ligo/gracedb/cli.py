@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with gracedb.  If not, see <http://www.gnu.org/licenses/>.
 
-import os, sys, shutil, urllib
+from __future__ import print_function
+import os, sys, shutil
 import json
 from ligo.gracedb.rest import GraceDb, load_json_or_die, GraceDbBasic
+import six
 
 
 DEFAULT_SERVICE_URL = "https://gracedb.ligo.org/gracedb/api"
@@ -74,7 +76,7 @@ typeCodeMap = {
         "MBTAOnline": "MBTA",
         "Injection": "HWINJ",
 }
-validTypes = typeCodeMap.keys()
+validTypes = list(typeCodeMap.keys())
 
 #-----------------------------------------------------------------
 # This is a factory for client classes. 
@@ -95,16 +97,16 @@ def derive_client(ClientBase=GraceDb):
             # Check that we *could* write the file before we
             # go to the trouble of getting it.  Also, try not
             # to open a file until we know we have data.
-            if not isinstance(destfile, file) and destfile != "-":
+            if not hasattr(destfile, 'read') and destfile != "-":
                 if not os.access(os.path.dirname(os.path.abspath(destfile)), os.W_OK):
                     raise IOError("%s: Permission denied" % destfile)
             response = self.files(graceid, filename)
             if response.status == 200:
-                if not isinstance(destfile, file):
+                if not hasattr(destfile, 'read'):
                     if destfile == '-':
                         destfile = sys.stdout
                     else:
-                        destfile = open(destfile, "w")
+                        destfile = open(destfile, "wb")
                 shutil.copyfileobj(response, destfile)
                 return 0
             else:
@@ -306,7 +308,7 @@ Longer strings will be truncated.""" % {
     elif args[0] == 'version':
         import pkg_resources
         version = pkg_resources.require("ligo-gracedb")[0].version
-        print "GraceDB Client v. %s" % version
+        print("GraceDB Client v. %s" % version)
         exit(0)
     elif args[0] == 'ping':
         response = client.ping()
@@ -360,7 +362,7 @@ Longer strings will be truncated.""" % {
         response = client.download(graceid, filename, outfile)
         if response:
             # no response means file saved.  any other response is an error message.
-            print response
+            print(response)
             exit(1)
         exit(0)
     elif args[0] == 'log':
@@ -434,7 +436,7 @@ Longer strings will be truncated.""" % {
         else:
             accessFun = {
                 "labels" : lambda e: \
-                    ",".join(e['labels'].keys()),
+                    ",".join(list(e['labels'].keys())),
                 "dataurl" : lambda e: e['links']['files'],
             }
 
@@ -464,18 +466,18 @@ Longer strings will be truncated.""" % {
             filename = args[3]
 
         # Check that the group, search, and pipeline are known to the API.
-        foundGroup = True if (unicode(group) in client.groups) else False
+        foundGroup = True if (six.text_type(group) in client.groups) else False
         if not foundGroup:
             error("Group must be one of: ", ", ".join(client.groups))
             sys.exit(1)
 
-        foundPipeline = True if (unicode(pipeline) in client.pipelines) else False
+        foundPipeline = True if (six.text_type(pipeline) in client.pipelines) else False
         if not foundPipeline:
             error("Pipeline must be one of: ", ", ".join(client.pipelines))
             sys.exit(1)
 
         if search:
-            foundSearch = True if (unicode(search) in client.searches) else False
+            foundSearch = True if (six.text_type(search) in client.searches) else False
             if not foundSearch:
                 error("Search must be one of: ", ", ".join(client.searches))
                 sys.exit(1)
@@ -500,9 +502,9 @@ Longer strings will be truncated.""" % {
         except:
             pass
 
-        if 'graceid' in rv.keys():
+        if 'graceid' in list(rv.keys()):
             output(rv['graceid'])
-        elif 'error' in rv.keys():
+        elif 'error' in list(rv.keys()):
             exitCode=1
             error(rv['error'])
 

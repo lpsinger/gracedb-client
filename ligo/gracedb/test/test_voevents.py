@@ -53,7 +53,7 @@ op.add_option("-v", "--verbose", dest="verbose",
 opts, args = op.parse_args()
 
 if opts.verbose and not opts.logfile:
-    raise ValueError, "A logfile must be specified if verbose output is desired."
+    raise ValueError("A logfile must be specified if verbose output is desired.")
 
 #--------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------
@@ -128,11 +128,11 @@ def test_create_preliminary_voevent():
     try:
         r = g.createVOEvent(graceid, "Preliminary")
         rdict = r.json()
-        assert_true('voevent_type' in rdict.keys())
+        assert_true('voevent_type' in list(rdict.keys()))
         logger.debug('got preliminary voevent text = %s\n' % rdict['text'])
         preliminary_voevent_text = rdict['text']
         preliminary_voevent = voeventparse.load(StringIO.StringIO(rdict['text']))
-    except HTTPError, e:
+    except HTTPError as e:
         outfile = open('tmp.html', 'w')
         outfile.write(str(e))
         outfile.close()
@@ -149,7 +149,7 @@ def test_create_update_voevent():
         skymap_type = "FAKE", skymap_image_filename = "fake_skymap_image.txt")
     rdict = r.json()
     logger.debug("got update text = %s\n"  % rdict['text'])
-    assert_true('voevent_type' in rdict.keys())
+    assert_true('voevent_type' in list(rdict.keys()))
     update_voevent = voeventparse.load(StringIO.StringIO(rdict['text']))
 
 def test_ivorns_unique():
@@ -168,7 +168,7 @@ def test_create_retraction_voevent():
     global retraction_voevent
     r = g.createVOEvent(graceid, "Retraction")
     rdict = r.json()
-    assert_true('voevent_type' in rdict.keys())
+    assert_true('voevent_type' in list(rdict.keys()))
     logger.debug("got retraction text = %s" % rdict['text'])
     retraction_voevent = voeventparse.load(StringIO.StringIO(rdict['text']))
 

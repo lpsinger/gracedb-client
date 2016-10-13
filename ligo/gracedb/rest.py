@@ -16,17 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with gracedb.  If not, see <http://www.gnu.org/licenses/>.
 
-import httplib, socket, ssl
+import six.moves.http_client, socket, ssl
 import mimetypes
 import urllib
 import os, sys
 import json
-from urlparse import urlparse
+from six.moves.urllib.parse import urlparse
 from base64 import b64encode
 import netrc
 from subprocess import Popen, PIPE
 import shlex
 from datetime import datetime
+import six
+from six.moves import map
 
 DEFAULT_SERVICE_URL = "https://gracedb.ligo.org/api/"
 DEFAULT_BASIC_SERVICE_URL = "https://gracedb.ligo.org/apibasic/"
@@ -63,7 +65,7 @@ def cleanListInput(list_arg):
     if isinstance(list_arg, float) or isinstance(list_arg, int):
         stringified_value = str(list_arg)
         return stringified_value
-    if not isinstance(list_arg, basestring):
+    if not isinstance(list_arg, six.string_types):
         stringified_list = ','.join(map(str,list_arg))            
     return stringified_list
 
@@ -127,8 +129,8 @@ def load_json_or_die(response):
 
     # Next, try to read the content of the response.
     try:
-        response_content = response.read()
-    except Exception, e:
+        response_content = response.read().decode()
+    except Exception as e:
         msg = "ERROR: problem reading response. \n\n"
         output_and_die(msg)
 
@@ -136,7 +138,7 @@ def load_json_or_die(response):
     rdict = None
     try:
         rdict = json.loads(response_content)
-    except Exception, e:
+    except Exception as e:
         msg = "ERROR: got unexpected content from the server:\n\n"
         msg += response_content + "\n\n"
         output_and_die(msg)
@@ -157,7 +159,7 @@ class HTTPError(Exception):
 # HTTP/S Proxy classes
 # Taken from: http://code.activestate.com/recipes/456195/
 
-class ProxyHTTPConnection(httplib.HTTPConnection):
+class ProxyHTTPConnection(six.moves.http_client.HTTPConnection):
 
     _ports = {'http' : 80, 'https' : 443}
 
@@ -169,19 +171,19 @@ class ProxyHTTPConnection(httplib.HTTPConnection):
         port = o.port
         host = o.hostname
         if proto is None:
-            raise ValueError, "unknown URL type: %s" % url
+            raise ValueError("unknown URL type: %s" % url)
         if port is None:
             try:
                 port = self._ports[proto]
             except KeyError:
-                raise ValueError, "unknown protocol for: %s" % url
+                raise ValueError("unknown protocol for: %s" % url)
         self._real_host = host
         self._real_port = port
-        httplib.HTTPConnection.request(self, method, url, body, headers)
+        six.moves.http_client.HTTPConnection.request(self, method, url, body, headers)
 
 
     def connect(self):
-        httplib.HTTPConnection.connect(self)
+        six.moves.http_client.HTTPConnection.connect(self)
         #send proxy CONNECT request
         self.send("CONNECT %s:%d HTTP/1.0\r\n\r\n" % (self._real_host, self._real_port))
         #expect a HTTP/1.0 200 Connection established
@@ -191,7 +193,7 @@ class ProxyHTTPConnection(httplib.HTTPConnection):
         if code != 200:
             #proxy returned and error, abort connection, and raise exception
             self.close()
-            raise socket.error, "Proxy connection failed: %d %s" % (code, message.strip())
+            raise socket.error("Proxy connection failed: %d %s" % (code, message.strip()))
         #eat up header block from proxy....
         while True:
             #should not use directly fp probably
@@ -214,7 +216,7 @@ class ProxyHTTPSConnection(ProxyHTTPConnection):
         #make the sock ssl-aware
         if sys.hexversion < 0x20709f0:
             ssl = socket.ssl(self.sock, self.key_file, self.cert_file)
-            self.sock = httplib.FakeSocket(self.sock, ssl)
+            self.sock = six.moves.http_client.FakeSocket(self.sock, ssl)
         else:
             self.sock = self.context.wrap_socket(self.sock)
 
@@ -255,7 +257,7 @@ class GsiRest(object):
             ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
             try:
                 ssl_context.load_cert_chain(self.cert, self.key)
-            except ssl.SSLError, e:
+            except ssl.SSLError as e:
                 msg = "\nERROR: Unable to load cert/key pair. \n\n"
                 msg += "Please run ligo-proxy-init or grid-proxy-init again "
                 msg += "or make sure your robot certificate is readable.\n\n"
@@ -273,14 +275,14 @@ class GsiRest(object):
             if proxy_host:
                 self.connector = lambda: ProxyHTTPSConnection(proxy_host, proxy_port, context=ssl_context)
             else:
-                self.connector = lambda: httplib.HTTPSConnection(host, port, context=ssl_context)            
+                self.connector = lambda: six.moves.http_client.HTTPSConnection(host, port, context=ssl_context)            
         else:
             # Using and older version of python. We'll pass in the cert and key files.
             if proxy_host:
                 self.connector = lambda: ProxyHTTPSConnection(proxy_host, proxy_port, 
                     key_file=self.key, cert_file=self.cert)
             else:
-                self.connector = lambda: httplib.HTTPSConnection(host, port, 
+                self.connector = lambda: six.moves.http_client.HTTPSConnection(host, port, 
                     key_file=self.key, cert_file=self.cert)
 
 
@@ -295,7 +297,7 @@ class GsiRest(object):
     def get_response(self, conn):
         try:
             return conn.getresponse()
-        except ssl.SSLError, e:
+        except ssl.SSLError as e:
             # Check for a valid user proxy cert.
             expired, error = is_expired(self.cert)
             if expired is not None:
@@ -313,7 +315,7 @@ class GsiRest(object):
                 msg += "Unable to check certificate expiry date: %s \n\n" %error
                 msg += "Problem establishing secure connection: %s \n\n" % str(e)
             output_and_die(msg)
-        except Exception, e:
+        except Exception as e:
             # Some error unrelated to the SSL connection has occurred.
             output_and_die("ERROR: %s\n" % str(e))
 
@@ -321,11 +323,11 @@ class GsiRest(object):
     def make_request(self, conn, *args, **kwargs):
         try:
             conn.request(*args, **kwargs)
-        except ssl.SSLError, e:
+        except ssl.SSLError as e:
             msg = "\nERROR \n\n"
             msg += "Problem establishing secure connection: %s \n\n" % str(e)
             output_and_die(msg)
-        except Exception, e:
+        except Exception as e:
             msg = "\nERROR \n\n"
             msg += "%s \n\n" % str(e)
             output_and_die(msg)
@@ -400,7 +402,7 @@ class GsiRest(object):
         else:
             body = body or {}
             if isinstance(body, dict):
-                body = body.items()
+                body = list(body.items())
             content_type, body = encode_multipart_formdata(body, files)
 #           XXX What about the headers in the params?
             headers = {
@@ -491,10 +493,10 @@ class GraceDb(GsiRest):
         """Check if input is valid.
            Return coded version if it is"""
         #  code_dict is dict of { code : descriptive_name }
-        if input_value in code_dict.keys():
+        if input_value in list(code_dict.keys()):
             # Already coded
             return input_value
-        if not input_value in code_dict.values():
+        if not input_value in list(code_dict.values()):
             # Not valid
             return None
         return [code
@@ -545,7 +547,7 @@ class GraceDb(GsiRest):
             fields.append(('search', search))
 
         # Update fields with additional keyword arguments
-        for key, value in kwargs.iteritems():
+        for key, value in six.iteritems(kwargs):
             fields.append((key, value))
 
         files = [('eventFile', filename, filecontents)]
@@ -758,7 +760,7 @@ class GraceDb(GsiRest):
             files = [('upload', os.path.basename(filename), filecontents)]
 
         # Let's see if tagname is a string or a list 
-        if tagname and not isinstance(tagname, basestring):
+        if tagname and not isinstance(tagname, six.string_types):
             tagnames = ','.join(tagname)
         else:
             tagnames = tagname if tagname else None
@@ -812,16 +814,16 @@ class GraceDb(GsiRest):
         if not group in self.em_groups:
             raise ValueError("group must be one of %s" % self.em_groups)
         
-        if not waveband in self.wavebands.keys():
-            raise ValueError("waveband must be one of %s" % self.wavebands.keys())
+        if not waveband in list(self.wavebands.keys()):
+            raise ValueError("waveband must be one of %s" % list(self.wavebands.keys()))
 
         eel_status = self._getCode(eel_status, self.eel_statuses)
         if not eel_status:
-            raise ValueError("EEL status must be one of %s" % self.eel_statuses.values())
+            raise ValueError("EEL status must be one of %s" % list(self.eel_statuses.values()))
 
         obs_status = self._getCode(obs_status, self.obs_statuses)
         if not obs_status:
-            raise ValueError("Observation status must be one of %s" % self.obs_statuses.values())
+            raise ValueError("Observation status must be one of %s" % list(self.obs_statuses.values()))
 
         template = self.templates['embb-event-log-template']
         uri = template.format(graceid=graceid)
@@ -874,9 +876,9 @@ class GraceDb(GsiRest):
         # These arguments can consist of a single element, a python
         # list, or a string.  Transform the list args to csv (unless they 
         # already are)
-        raList, raWidthList, decList, decWidthList, startTimeList, durationList = map(
+        raList, raWidthList, decList, decWidthList, startTimeList, durationList = list(map(
             cleanListInput, 
-            [raList, raWidthList, decList, decWidthList, startTimeList, durationList])
+            [raList, raWidthList, decList, decWidthList, startTimeList, durationList]))
 
         template = self.templates['emobservation-list-template']
         uri = template.format(graceid=graceid)
@@ -1051,7 +1053,7 @@ class GraceDb(GsiRest):
         # validate facility, waveband, eel_status, and obs_status
         voevent_type = self._getCode(voevent_type.lower(), self.voevent_types)
         if not voevent_type:
-            raise ValueError("voevent_type must be one of: %s" % self.voevent_types.values())
+            raise ValueError("voevent_type must be one of: %s" % list(self.voevent_types.values()))
         template = self.templates['voevent-list-template']
         uri = template.format(graceid=graceid)
 
@@ -1138,13 +1140,13 @@ class GraceDbBasic(GraceDb):
             if proxy_host:
                 self.connector = lambda: ProxyHTTPSConnection(proxy_host, proxy_port, context=ssl_context)
             else:
-                self.connector = lambda: httplib.HTTPSConnection(host, port, context=ssl_context)            
+                self.connector = lambda: six.moves.http_client.HTTPSConnection(host, port, context=ssl_context)            
         else:
             # Using and older version of python. We'll pass in the cert and key files.
             if proxy_host:
                 self.connector = lambda: ProxyHTTPSConnection(proxy_host, proxy_port)
             else:
-                self.connector = lambda: httplib.HTTPSConnection(host, port)
+                self.connector = lambda: six.moves.http_client.HTTPSConnection(host, port)
 
         self.service_url = service_url
         self._service_info = None
@@ -1154,11 +1156,11 @@ class GraceDbBasic(GraceDb):
     def get_response(self, conn):
         try:
             return conn.getresponse()
-        except ssl.SSLError, e:
+        except ssl.SSLError as e:
             msg = "\nERROR \n\n"
             msg += "Problem establishing secure connection: %s \n\n" % str(e)
             output_and_die(msg)
-        except Exception, e:
+        except Exception as e:
             msg = "\nERROR \n\n"
             msg += "%s \n\n" % str(e)
             output_and_die(msg)
@@ -1167,11 +1169,11 @@ class GraceDbBasic(GraceDb):
     def make_request(self, conn, *args, **kwargs):
         try:
             conn.request(*args, **kwargs)
-        except ssl.SSLError, e:
+        except ssl.SSLError as e:
             msg = "\nERROR \n\n"
             msg += "Problem establishing secure connection: %s \n\n" % str(e)
             output_and_die(msg)
-        except Exception, e:
+        except Exception as e:
             msg = "\nERROR \n\n"
             msg += "%s \n\n" % str(e)
             output_and_die(msg)
