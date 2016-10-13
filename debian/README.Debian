@@ -1,0 +1,4 @@
+Note that the dependencies for the python3-ligo-gracedb package is somewhat
+different from the python-ligo-gracedb package because python3-m2crypto and
+python3-cjson do not exist. However, some basic functions of gracedb doesn't
+need them. Consider making them recommended rather than required dependencies.
